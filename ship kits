@@ -1,0 +1,365 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+
+interface CustomerInfo {
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
+interface CartItem {
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  type: string;
+}
+
+export default function OrderPage() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'US'
+  });
+  const [tax, setTax] = useState(0);
+  const [shipping, setShipping] = useState(0);
+
+  // Starter Kit Configuration
+  const STARTER_KIT = {
+    name: "Dowel Starter Kit",
+    dowelCount: 300,
+    pricePerDowel: 0.10,
+    totalPrice: 30.00
+  };
+
+  // Calculate tax
+  const calculateTax = (subtotal: number): number => {
+    const taxRate = 0.0825; // 8.25%
+    return subtotal * taxRate;
+  };
+
+  // Calculate shipping
+  const calculateShipping = (items: CartItem[]): number => {
+    let totalWeight = 0;
+    items.forEach(item => {
+      if (item.type === 'starter-kit') {
+        totalWeight += item.quantity * 2;
+      }
+    });
+    
+    if (totalWeight <= 5) return 8.99;
+    if (totalWeight <= 15) return 12.99;
+    return 19.99;
+  };
+
+  // Update cart
+  const handleCartUpdate = (newItem: CartItem) => {
+    const existingItemIndex = cart.findIndex(item => item.id === newItem.id);
+    let updatedCart: CartItem[];
+
+    if (existingItemIndex >= 0) {
+      updatedCart = cart.map((item, index) => 
+        index === existingItemIndex 
+          ? { ...item, quantity: item.quantity + newItem.quantity, subtotal: (item.quantity + newItem.quantity) * item.unitPrice }
+          : item
+      );
+    } else {
+      updatedCart = [...cart, newItem];
+    }
+
+    setCart(updatedCart);
+  };
+
+  // Recalculate totals
+  useEffect(() => {
+    const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    setTax(calculateTax(subtotal));
+    setShipping(calculateShipping(cart));
+  }, [cart]);
+
+  const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const total = subtotal + tax + shipping;
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          
+          <div className="bg-blue-600 px-6 py-4">
+            <h1 className="text-2xl font-bold text-white">Place Your Order</h1>
+          </div>
+
+          <div className="p-6 space-y-8">
+            
+            <StarterKitSection 
+              starterKit={STARTER_KIT}
+              onUpdateCart={handleCartUpdate}
+            />
+
+            <CustomerInfoSection 
+              customerInfo={customerInfo}
+              setCustomerInfo={setCustomerInfo}
+            />
+
+            <OrderSummary 
+              cart={cart}
+              subtotal={subtotal}
+              tax={tax}
+              shipping={shipping}
+              total={total}
+            />
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StarterKitSection({ starterKit, onUpdateCart }: {
+  starterKit: any;
+  onUpdateCart: (item: CartItem) => void;
+}) {
+  const [quantity, setQuantity] = useState(1);
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
+
+  const subtotal = starterKit.totalPrice * quantity;
+
+  const handleAddToCart = () => {
+    const cartItem: CartItem = {
+      id: 'starter-kit',
+      name: starterKit.name,
+      description: `${starterKit.dowelCount} dowels at $${starterKit.pricePerDowel.toFixed(2)} each`,
+      quantity: quantity,
+      unitPrice: starterKit.totalPrice,
+      subtotal: subtotal,
+      type: 'starter-kit'
+    };
+
+    onUpdateCart(cartItem);
+    setIsAddedToCart(true);
+    setTimeout(() => setIsAddedToCart(false), 2000);
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-6">
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          Dowel Starter Kit
+        </h2>
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+          <div className="flex items-center">
+            <span className="text-blue-800 font-medium">Perfect for getting started!</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 mb-6">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Includes:</span>
+          <span className="font-medium">{starterKit.dowelCount} dowels</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Price per dowel:</span>
+          <span className="font-medium">${starterKit.pricePerDowel.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center border-t pt-3">
+          <span className="text-gray-900 font-semibold">Kit Price:</span>
+          <span className="text-lg font-bold text-green-600">${starterKit.totalPrice.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <label className="text-sm font-medium text-gray-700">
+            Quantity:
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-md">
+            <button
+              type="button"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="px-3 py-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+              disabled={quantity <= 1}
+            >
+              −
+            </button>
+            <input
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-16 px-2 py-1 text-center border-0"
+            />
+            <button
+              type="button"
+              onClick={() => setQuantity(quantity + 1)}
+              className="px-3 py-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        
+        <div className="text-right">
+          <div className="text-sm text-gray-600">Subtotal:</div>
+          <div className="text-lg font-bold">${subtotal.toFixed(2)}</div>
+        </div>
+      </div>
+
+      <button
+        onClick={handleAddToCart}
+        className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+          isAddedToCart 
+            ? 'bg-green-600 text-white' 
+            : 'bg-blue-600 hover:bg-blue-700 text-white'
+        }`}
+      >
+        {isAddedToCart ? '✓ Added to Cart!' : 'Add Starter Kit to Cart'}
+      </button>
+    </div>
+  );
+}
+
+function CustomerInfoSection({ customerInfo, setCustomerInfo }: {
+  customerInfo: CustomerInfo;
+  setCustomerInfo: React.Dispatch<React.SetStateAction<CustomerInfo>>;
+}) {
+  const handleInputChange = (field: keyof CustomerInfo, value: string) => {
+    setCustomerInfo(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-6">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Shipping Information</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input
+            type="email"
+            value={customerInfo.email}
+            onChange={(e) => handleInputChange('email', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <input
+            type="text"
+            value={customerInfo.address}
+            onChange={(e) => handleInputChange('address', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+          <input
+            type="text"
+            value={customerInfo.city}
+            onChange={(e) => handleInputChange('city', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+          <input
+            type="text"
+            value={customerInfo.state}
+            onChange={(e) => handleInputChange('state', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+          <input
+            type="text"
+            value={customerInfo.zipCode}
+            onChange={(e) => handleInputChange('zipCode', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+          <select
+            value={customerInfo.country}
+            onChange={(e) => handleInputChange('country', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          >
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderSummary({ cart, subtotal, tax, shipping, total }: {
+  cart: CartItem[];
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  total: number;
+}) {
+  return (
+    <div className="border border-gray-200 rounded-lg p-6">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
+      
+      {cart.length === 0 ? (
+        <p className="text-gray-500">No items in cart</p>
+      ) : (
+        <>
+          <div className="space-y-3 mb-4">
+            {cart.map((item, index) => (
+              <div key={index} className="flex justify-between items-center py-2 border-b">
+                <div>
+                  <div className="font-medium">{item.name}</div>
+                  <div className="text-sm text-gray-600">{item.description}</div>
+                  <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
+                </div>
+                <div className="font-medium">${item.subtotal.toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tax:</span>
+              <span>${tax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Shipping:</span>
+              <span>${shipping.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold pt-2 border-t">
+              <span>Total:</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <button className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md font-medium">
+            Proceed to Checkout
+          </button>
+        </>
+      )}
+    </div>
+  );
+}

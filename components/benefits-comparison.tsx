@@ -20,7 +20,7 @@ interface ComparisonItem {
 
 const comparisonData: ComparisonItem[] = [
   {
-    feature: "Visible Fasteners",
+    feature: "Invisible Fasteners",
     traditional: {
       status: false,
       description: "Screws and nails visible on surface"

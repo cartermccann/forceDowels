@@ -124,7 +124,7 @@ export default function OrderPage() {
         // Add Force Dowels Kit to cart
         addItem({
           id: "force-dowels-kit", // Use consistent ID for Force Dowels Kit
-          name: "Force Dowels Kit",
+          name: "Starter Kit",
           quantity: 300,
           tier: "Kit - 300 units",
           pricePerUnit: 0.12,
